@@ -41,9 +41,9 @@ func main() {
 			"'/posts/delete' (PUT) to delete a post  "))
 	}).Methods("GET")
 
-	r.HandleFunc("/posts", articlesHandler).Methods("GET")
-	r.HandleFunc("/posts/{id:[0-9]+}", articleHandler).Methods("GET", "POST")
-	r.HandleFunc("/posts/delete", deleteArticleHandler).Methods("PUT")
+	r.HandleFunc("/posts", articlesHandler).Methods("GET", "POST")
+	r.HandleFunc("/posts/{id:[0-9]+}", articleHandler).Methods("GET")
+	r.HandleFunc("/posts/delete", deleteArticleHandler).Methods("DELETE")
 
 	log.Println("Starting server at port 4000")
 
@@ -52,6 +52,11 @@ func main() {
 
 //Fetches all posts
 func articlesHandler(w http.ResponseWriter, r *http.Request) {
+
+	if r.Method == "POST" {
+		createArticle(w, r)
+		return
+	}
 
 	users, _ := json.Marshal(posts) //Handle errors in real life
 
@@ -94,4 +99,36 @@ func articleHandler(w http.ResponseWriter, r *http.Request) {
 
 func deleteArticleHandler(w http.ResponseWriter, r *http.Request) {
 
+}
+
+func createArticle(w http.ResponseWriter, r *http.Request) {
+	type d struct {
+		Title   string `json:"title"`
+		Content string `json:"content"`
+	}
+
+	var data d
+
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(http.StatusText(http.StatusBadRequest)))
+		return
+	}
+
+	if data.Title == "" || data.Content == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Invalid data... The title and/or content for a blog posts cannot be empty"))
+		return
+	}
+
+	newPost := &post{
+		len(posts) + 1,
+		data.Title,
+		data.Content,
+	}
+
+	posts = append(posts, newPost)
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("The blog post have been created"))
 }

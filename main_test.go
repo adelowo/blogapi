@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -79,6 +80,73 @@ func TestArticleHandlerWithAnInvalidPost(t *testing.T) {
 	expected := "404 page not found\n"
 
 	assert.Equal(t, expected, rr.Body.String(), "Response body differs")
+}
+
+func TestAnEmptyTitleCannotBeUsedToCreateANewPost(t *testing.T) {
+
+	data := []byte(`{"title" : "", "content" : "A new blog post"}`)
+
+	req, err := http.NewRequest("POST", "/posts", bytes.NewBuffer(data))
+
+	checkError(err, t)
+
+	rr := httptest.NewRecorder()
+
+	http.HandlerFunc(createArticle).ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusBadRequest {
+		t.Errorf("Status code is invalid. Expected %d. Got %d instead", http.StatusBadRequest, status)
+	}
+
+	expected := "Invalid data... The title and/or content for a blog posts cannot be empty"
+
+	assert.Equal(t, expected, rr.Body.String(), "Response body differs")
+}
+
+func TestAnEmptyContentCannotBeUsedToCreateANewPost(t *testing.T) {
+
+	data := []byte(`{"title" : "Some blog title", "content" : ""}`)
+
+	req, err := http.NewRequest("POST", "/posts", bytes.NewBuffer(data))
+
+	checkError(err, t)
+
+	rr := httptest.NewRecorder()
+
+	http.HandlerFunc(createArticle).ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusBadRequest {
+		t.Errorf("Status code is invalid. Expected %d. Got %d instead", http.StatusBadRequest, status)
+	}
+
+	expected := "Invalid data... The title and/or content for a blog posts cannot be empty"
+
+	assert.Equal(t, expected, rr.Body.String(), "Response body differs")
+}
+
+func TestCanCreateANewBlogPost(t *testing.T) {
+
+	data := []byte(`{"title" : "Title of a new blog post", "content" : "A new blog post"}`)
+
+	req, err := http.NewRequest("POST", "/posts", bytes.NewBuffer(data))
+
+	checkError(err, t)
+
+	rr := httptest.NewRecorder()
+
+	http.HandlerFunc(createArticle).ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("Status code is invalid. Expected %d. Got %d instead", http.StatusOK, status)
+	}
+
+	expected := "The blog post have been created"
+
+	assert.Equal(t, expected, rr.Body.String(), "Response body differs")
+
+	if len(posts) != 6 { //we appended one to the array
+		t.Errorf("Post was not created")
+	}
 }
 
 func checkError(err error, t *testing.T) {
