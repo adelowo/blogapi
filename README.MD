@@ -8,8 +8,8 @@ Features
 
 - [-] Posts can be created.
 - [-] Posts can be deleted.
-- [-] A single post can be viewed.
-- [-] All posts can be viewed.
+- [x] A single post can be viewed.
+- [x] All posts can be viewed.
 
 ### License
 MIT
