@@ -66,6 +66,11 @@ func articlesHandler(w http.ResponseWriter, r *http.Request) {
 
 func articleHandler(w http.ResponseWriter, r *http.Request) {
 
+	if r.Method == "POST" {
+		createArticle(w, r)
+		return
+	}
+
 	vars := mux.Vars(r)
 
 	id := vars["id"]
@@ -98,6 +103,46 @@ func articleHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func deleteArticleHandler(w http.ResponseWriter, r *http.Request) {
+	type d struct {
+		ID int `json:"id"`
+	}
+
+	var data d
+
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Invalid request"))
+		return
+	}
+
+	var postFound bool
+
+	for _, v := range posts {
+		if v.ID == data.ID {
+			postFound = true
+			break
+		}
+	}
+
+	if !postFound {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte(http.StatusText(http.StatusNotFound)))
+		return
+	}
+
+	//Get all posts except the one with the key we want to delete.
+	//What is being done here basically is moving "back left" and "front right" of the key we want to delete.
+	//More like summing up a matrix
+	//Hence the key becomes stale and is dropped from the new array.
+
+	po := posts[:data.ID-1]
+
+	posts = po
+
+	posts = append(posts, posts[data.ID-1:]...)
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("The blog post was deleted successfully"))
 
 }
 
@@ -128,6 +173,8 @@ func createArticle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	posts = append(posts, newPost)
+
+	log.Println(posts)
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("The blog post have been created"))

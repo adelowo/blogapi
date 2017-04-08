@@ -149,6 +149,47 @@ func TestCanCreateANewBlogPost(t *testing.T) {
 	}
 }
 
+func TestCannotDeleteNonExistentBlogPost(t *testing.T) {
+	req, err := http.NewRequest("DELETE", "/posts", bytes.NewBuffer([]byte(`{"id" : 60}`)))
+
+	checkError(err, t)
+
+	rr := httptest.NewRecorder()
+
+	http.HandlerFunc(deleteArticleHandler).ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusNotFound {
+		t.Errorf("Status code differs. Expected %d. Got %d", http.StatusNotFound, status)
+	}
+
+	expected := "Not Found"
+
+	assert.Equal(t, expected, rr.Body.String(), "Response body differs")
+}
+
+func TestCanDeleteAPost(t *testing.T) {
+	req, err := http.NewRequest("DELETE", "/posts", bytes.NewBuffer([]byte(`{"id" : 5}`)))
+
+	checkError(err, t)
+
+	rr := httptest.NewRecorder()
+
+	http.HandlerFunc(deleteArticleHandler).ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("Status code differs. Expected %d. Got %d", http.StatusOK, status)
+	}
+
+	expected := "The blog post was deleted successfully"
+
+	assert.Equal(t, expected, rr.Body.String(), "Response body differs")
+
+	if len(posts) != 4 {
+		t.Errorf("An error occurred while post was being deleted, Post count is %d", len(posts))
+	}
+
+}
+
 func checkError(err error, t *testing.T) {
 	if err != nil {
 		t.Errorf("An error occurred. %v", err)
